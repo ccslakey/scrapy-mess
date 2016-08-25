@@ -5,7 +5,7 @@ import ipdb
 
 headers = {
     'User-Agent': 'ConnorBot',
-    'From': 'cslakeydev@gmail.com'  # This is another valid field
+    'From': 'cslakeydev@gmail.com'
 }
 
 def get_absolute_paths(unfilteredlinks):
@@ -69,7 +69,6 @@ class category_page_scraper:
             if result_count:
                 result_count = result_count[0]
                 rounded_count = int(math.floor(int(result_count)/100.0)) * 100
-                # print(str(result_count) + ":" + str(rounded_count))
                 for i in range(0, rounded_count, 100):
                     page = requests.get("http://" + city + "." + category_url + '?s=' + str(i), headers=headers)
                     next_tree = html.fromstring(page.content)
@@ -79,9 +78,6 @@ class category_page_scraper:
                     self.links += get_absolute_paths(next_tree.xpath(
                         "//p[@class='row']/span/span/a[@class='hdrlnk']/@href"
                     ))
-                    # print("http://" + city + "." + category_url + '?s=' + str(i))
-                # print(self.links)
-                # print(str(len(self.titles)) + ": " + str(len(self.linksx)))
     def children(self):
         self.children = []
         if(self.links):
@@ -95,8 +91,6 @@ class category_page_scraper:
     def print_links(self):
         print("\n".join(self.links))
 
-    # def children(self):
-    # make some baby spiders
 
 class posting_scraper:
 
