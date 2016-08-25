@@ -13,14 +13,15 @@ def make_absolute_path(link):
         return "craiglist.org" + link
 
 
-def comprehend_lists(list_a, list_b):
+def lists_to_dict(list_a, list_b):
     if len(list_a) == len(list_b):
         return dict(zip(list_a, list_b))
 
 
 class front_page_scraper:
 # call by city next
-    def __init__(self):
+    def __init__(self, city):
+        # city will need to be dynamic in order to get relative links and create child spiders
         page = requests.get('http://sacramento.craigslist.org/')
         tree = html.fromstring(page.content)
 
@@ -32,7 +33,7 @@ class front_page_scraper:
             'li/a/span/text()')
 
         categories = get_absolute_paths(categories)
-        self.category_dict = comprehend_lists(categories, category_titles)
+        self.category_dict = lists_to_dict(categories, category_titles)
 
     def print_self(self):
         for k, v in self.category_dict.items():
@@ -53,14 +54,16 @@ class category_page_scraper:
         page = requests.get(category_url)
         tree = html.fromstring(page.content)
         self.titles = tree.xpath(
-            "//body/section[@id='pagecontainer']/"+
-            "form[@id='searchform']/div[@class='content']/div[@class='rows']/p[@class='row']/span/span/a/span/text()"
+            "//p[@class='row']/span/span/a/span/text()"
         )
         self.links = get_absolute_paths(tree.xpath(
-            "//body/section[@id='pagecontainer']/"+
-            "form[@id='searchform']/div[@class='content']/div[@class='rows']/p[@class='row']/span/span/a[@class='hdrlnk']/@href"
+            "//p[@class='row']/span/span/a[@class='hdrlnk']/@href"
         ))
         self.title = category_title
+
+        pagination_limit = tree.xpath(
+            "//span[@class='totalcount']/text()"
+        )[0]
 
     def print_self(self):
         print("\n".join(self.titles))
@@ -68,11 +71,26 @@ class category_page_scraper:
     def print_links(self):
         print("\n".join(self.links))
 
-page_scraper = category_page_scraper('http://sacramento.craiglist.org/search/apa', 'materials')
-page_scraper.print_links()
+
+class posting_scraper:
+
+    def __init__(self, url):
+        page = requests.get(url)
+        self.tree = html.fromstring(page.content)
+
+        description = self.tree.xpath(
+            "//section[@id='postingbody']/text()"
+        )
+        self.description = "\n".join(description)
+        print("\n".join(self.body))
 
 
-# pagination_limit = tree.xpath('//font[@color="green"]/text()')[-1]
-# for k,v in category_dict.items():
-# print(k, ": ", v)
-# print("\n".join(categorytitles))
+
+# fp = front_page_scraper('sacramento')
+# fp.children()
+# print(fp.children)
+# fp.print_self()
+# page_scraper = category_page_scraper('http://sacramento.craiglist.org/search/apa', 'materials')
+# page_scraper.print_links()
+
+post_scraper = posting_scraper('http://sacramento.craiglist.org/apa/5749097502.html')
