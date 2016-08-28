@@ -18,8 +18,9 @@ def make_absolute_path(link, city):
                 return "http://" + city + ".craiglist.org" + link
     # if link[0:8] is "https://":
     #     return link
-    # else:
-    #     return link
+    elif "http://" not in link:
+            return "http://" + city + ".craiglist.org" + link
+    return link
 
 def lists_to_dict(list_a, list_b):
     # creates a dict with list a as the keys, list b as the vals
@@ -40,8 +41,9 @@ class front_page_scraper:
 
         categories = get_absolute_paths(links, city)
         self.links = categories
-
+        # this is probably a Bad Thing
         self.category_dict = lists_to_dict(self.categories_titles, self.links)
+        self.listed = [{"title": k, "link": v, "api_query": (str(k).split(" ")[0])} for k, v in self.category_dict.items()]
         self.city = city
 
     def print_self(self):
@@ -62,35 +64,32 @@ class front_page_scraper:
         self.children = []
         for i in range(length):
             item = {'url': items[i][1], 'title': items[i][0]}
-            # print(item)
 
             if (item['url']) and ("org/i/" not in item['url']):
                 cat_scraper = category_page_scraper(item['url'], item['title'], self.city)
-
-            # cat_scraper.children()
-                # print(cat_scraper.title)
-                # cat_scraper.print_self
-                # ipdb.set_trace()
                 self.children.append(cat_scraper)
 
 class category_page_scraper:
 
-    def __init__(self, category_url, category_title, city):
+    def __init__(self, category_url, category_title, city, limit=100):
         self.city = city
         self.title = category_title
         self.titles = []
         self.links = []
         self.url = category_url
         if "forums" not in category_url:
-            # sorry forums
-
+            self.type = "search or i"
             self.page = requests.get(category_url, headers=headers)
             self.tree = html.fromstring(self.page.content)
             result_count = self.tree.xpath(
                 "//span[@class='totalcount']/text()"
             )
-            self.result_count = result_count[0]
+            if limit is None:
+                self.result_count = result_count[0]
+            else:
+                self.result_count = limit
             if self.result_count:
+                # round up to nearest hundred for pagination
                 self.rounded_count = int(math.ceil(int(self.result_count)/100.0)) * 100
 
                 for i in range(0, self.rounded_count, 100):
@@ -105,14 +104,23 @@ class category_page_scraper:
                         "//p[@class='row']/span/span/a[@class='hdrlnk']/@href"
                     ), city)
             self.category_dict = lists_to_dict(self.titles, self.links)
+            self.listed = [{"title": k, "link": v, "type": self.type} for k, v in self.category_dict.items()]
+
+        elif "forums" in category_url:
+            self.title = "Forums - " + category_title
+            self.type = "forums"
+            self.url = category_url
+
+
 
     def children(self):
         self.children = []
         if(self.links):
             for i in range(int(len(self.links))):
                 post = posting_scraper(self.links[i], self.city)
-                self.children.append(post)
-
+                self.children.append(post.serialize())
+        elif self.type is "forums":
+            self.children = [self.title, self.url]
     def print_self(self):
         print("\n".join(self.titles))
 
@@ -123,7 +131,7 @@ class category_page_scraper:
 class posting_scraper:
 
     def __init__(self, url, city):
-        self.url = "http://" + city + "." + url
+        self.url = url
         page = requests.get(self.url)
         self.tree = html.fromstring(page.content)
         description = self.tree.xpath(
@@ -139,19 +147,28 @@ class posting_scraper:
         self.location_text = self.tree.xpath(
             "//div[@class='mapAndAttrs']/div[@class='mapbox']/div/text()"
         )
-        # if type(location_text) == list:
-        #     self.location_text = location_text[0]
-        # else:
-        #     self.location_text = location_text
         self.maps_href = self.tree.xpath(
             "//div[@class='mapAndAttrs']/div[@class='mapbox']/p/small/a/@href"
         )
         self.attrs = self.tree.xpath(
             "//div[@class='mapAndAttrs']/p[@class='attrgroup']/span/text()|//b/text()"
         )
-        # print(self.title)
+    def serialize(self):
+        return {
+            'title': self.title or '',
+            'url': self.url or '',
+            'images': self.images or [],
+            'location_text': self.location_text or '',
+            'maps_href': self.maps_href or '',
+            'attrs': self.attrs or [],
+            'description': self.description or '',
+        }
+
+
+
+# print(self.title)
 # myS = category_page_scraper('http://sacramento.craiglist.org/search/ats', 'artists',
-#  'sacramento')
+ # 'sacramento')
 # fp = front_page_scraper('sacramento')
 # fp.print_links()
 # fp.create_children()
