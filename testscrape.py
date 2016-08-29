@@ -1,11 +1,13 @@
 from lxml import html
 import requests
+import grequests
+
 import math
 import ipdb
 
 headers = {
-    'User-Agent': 'ConnorBot',
-    'From': 'cslakeydev@gmail.com'
+    'User-Agent': 'someonespecial',
+    # 'From': 'cslakeydev@gmail.com'
 }
 
 def get_absolute_paths(unfilteredlinks, city):
@@ -58,6 +60,7 @@ class front_page_scraper:
     def print_categories(self):
         print("\n".join(self.categories_titles))
 
+    # convenience for later
     def create_children(self):
         items = list(self.category_dict.items())
         length = len(items)
@@ -69,6 +72,7 @@ class front_page_scraper:
                 cat_scraper = category_page_scraper(item['url'], item['title'], self.city)
                 self.children.append(cat_scraper)
 
+
 class category_page_scraper:
 
     def __init__(self, category_url, category_title, city, limit=100):
@@ -77,6 +81,7 @@ class category_page_scraper:
         self.titles = []
         self.links = []
         self.url = category_url
+        # self.type = "listings"
         if "forums" not in category_url:
             self.type = "search or i"
             self.page = requests.get(category_url, headers=headers)
@@ -84,17 +89,24 @@ class category_page_scraper:
             result_count = self.tree.xpath(
                 "//span[@class='totalcount']/text()"
             )
-            if limit is None:
+            if limit is None or limit > result_count:
                 self.result_count = result_count[0]
             else:
                 self.result_count = limit
             if self.result_count:
                 # round up to nearest hundred for pagination
                 self.rounded_count = int(math.ceil(int(self.result_count)/100.0)) * 100
-
+                urls = []
+                # ipdb.set_trace()
                 for i in range(0, self.rounded_count, 100):
+                    url = category_url + '?s=' + str(i)
+                    urls.append(url)
 
-                    page = requests.get(category_url + '?s=' + str(i), headers=headers)
+                rs = (grequests.get(u) for u in urls)
+                responses = grequests.map(rs)
+
+                for i in range(0, len(responses)):
+                    page = responses[i]
                     self.next_tree = html.fromstring(page.content)
 
                     self.titles += self.next_tree.xpath(
@@ -103,8 +115,8 @@ class category_page_scraper:
                     self.links += get_absolute_paths(self.next_tree.xpath(
                         "//p[@class='row']/span/span/a[@class='hdrlnk']/@href"
                     ), city)
-            self.category_dict = lists_to_dict(self.titles, self.links)
-            self.listed = [{"title": k, "link": v, "type": self.type} for k, v in self.category_dict.items()]
+                self.category_dict = lists_to_dict(self.titles, self.links)
+                self.listed = [{"title": k, "link": v, "type": self.type} for k, v in self.category_dict.items()]
 
         elif "forums" in category_url:
             self.title = "Forums - " + category_title
@@ -116,9 +128,13 @@ class category_page_scraper:
     def children(self):
         self.children = []
         if(self.links):
-            for i in range(int(len(self.links))):
-                post = posting_scraper(self.links[i], self.city)
+            rs = (grequests.get(u) for u in self.links)
+            responses = grequests.map(rs)
+            for i in range(0,len(responses)):
+                page = responses[i]
+                post = posting_scraper(self.links[i], page, self.city)
                 self.children.append(post.serialize())
+
         elif self.type is "forums":
             self.children = [self.title, self.url]
     def print_self(self):
@@ -130,9 +146,8 @@ class category_page_scraper:
 
 class posting_scraper:
 
-    def __init__(self, url, city):
+    def __init__(self, url, page, city):
         self.url = url
-        page = requests.get(self.url)
         self.tree = html.fromstring(page.content)
         description = self.tree.xpath(
             "//section[@id='postingbody']/text()|//b/text()"
@@ -155,7 +170,7 @@ class posting_scraper:
         )
     def serialize(self):
         return {
-            'title': self.title or '',
+            'title': self.title[0] or '',
             'url': self.url or '',
             'images': self.images or [],
             'location_text': self.location_text or '',
