@@ -18,6 +18,11 @@ class city_list_scraper:
         tree = html.fromstring(page.content)
         self.cities = tree.xpath("//section/div[@class='colmask']/div/ul/li/a/text()")
 
+        uncut_links = tree.xpath("//section/div[@class='colmask']/div/ul/li/a/@href")
+        self.links = [link[2:-1] for link in uncut_links]
+        self.category_dict = lists_to_dict(self.cities, self.links)
+        self.listed = [{"city name": k, "link": v} for k, v in self.category_dict.items()]
+
 class front_page_scraper:
     def __init__(self, city):
         page = requests.get('http://' + city + '.craigslist.org/', headers=headers)
@@ -196,7 +201,7 @@ cities = city_list_scraper()
 # fp.print_links()
 # fp.create_children()
 # print(fp.children)
-# ipdb.set_trace()
+ipdb.set_trace()
 
 # cs = category_page_scraper("craigslist.org/search/hea", "health jobs", "sacramento")
 # cs.print_links()

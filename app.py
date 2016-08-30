@@ -3,13 +3,18 @@ import os
 from flask import Flask, jsonify, Response, request
 from lxml import html
 import requests
-from testscrape import front_page_scraper, category_page_scraper
+from testscrape import front_page_scraper, category_page_scraper, city_list_scraper
 import json
 
 app = Flask(__name__)
 
 # call /list with example
 # http://localhost:5000/list?city=sacramento&category=artists
+@app.route("/cities")
+def cities_response():
+    cities_scraper = city_list_scraper()
+    return Response(json.dumps(cities_scraper.listed),  mimetype='application/json')
+
 @app.route("/list")
 def list_Response():
     city = one_or_another(request.args.get('city'), "sfbay")
