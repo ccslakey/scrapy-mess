@@ -12,6 +12,12 @@ headers = {
     'From': 'cslakeydev@gmail.com'
 }
 
+class city_list_scraper:
+    def __init__(self):
+        page = requests.get("http://www.craigslist.org/about/sites")
+        tree = html.fromstring(page.content)
+        self.cities = tree.xpath("//section/div[@class='colmask']/div/ul/li/a/text()")
+
 class front_page_scraper:
     def __init__(self, city):
         page = requests.get('http://' + city + '.craigslist.org/', headers=headers)
@@ -118,7 +124,7 @@ class category_page_scraper:
             self.discussions = tree.xpath(
                 "//div[@class='threads']/article"
             )
-
+            ipdb.set_trace()
             # get the discussions, represent each
             # each will have comments on the first post
             # articles #thread represent comments in a discussion
@@ -181,8 +187,9 @@ class posting_scraper:
 
 
 
+cities = city_list_scraper()
 # print(self.title)
-# ipdb.set_trace()
+
 # myS = category_page_scraper('http://sacramento.craiglist.org/search/ats', 'artists', 'sacramento')
 
 # fp = front_page_scraper('sacramento')
