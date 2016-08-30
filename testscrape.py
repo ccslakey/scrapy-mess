@@ -126,10 +126,10 @@ class category_page_scraper:
             self.page = requests.get(category_url, headers=headers)
             tree = html.fromstring(self.page.content)
 
-            self.discussions = tree.xpath(
-                "//div[@class='threads']/article"
-            )
-            ipdb.set_trace()
+            # self.discussions = tree.xpath(
+            #     "//div[@class='threads']/article"
+            # )
+            # ipdb.set_trace()
             # get the discussions, represent each
             # each will have comments on the first post
             # articles #thread represent comments in a discussion
@@ -192,7 +192,7 @@ class posting_scraper:
 
 
 
-cities = city_list_scraper()
+# cities = city_list_scraper()
 # print(self.title)
 
 # myS = category_page_scraper('http://sacramento.craiglist.org/search/ats', 'artists', 'sacramento')
@@ -201,7 +201,7 @@ cities = city_list_scraper()
 # fp.print_links()
 # fp.create_children()
 # print(fp.children)
-ipdb.set_trace()
+# ipdb.set_trace()
 
 # cs = category_page_scraper("craigslist.org/search/hea", "health jobs", "sacramento")
 # cs.print_links()
