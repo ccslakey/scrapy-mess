@@ -24,7 +24,6 @@ def list_Response():
 
         if category_url != None:
             limit = request.args.get('limit') or 100
-            ipdb.set_trace()
             cs = category_page_scraper(category_url, cat, city, limit)
             cs.children()
             return Response(json.dumps(cs.children),  mimetype='application/json')

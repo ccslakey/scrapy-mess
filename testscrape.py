@@ -107,10 +107,22 @@ class category_page_scraper:
                 self.listed = [{"title": k, "link": v, "type": self.type} for k, v in self.category_dict.items()]
 
         elif "forums" in category_url:
+            # scrape for forum posts
             self.title = "Forums - " + category_title
             self.type = "forums"
             self.url = category_url
+
             self.page = requests.get(category_url, headers=headers)
+            tree = html.fromstring(self.page.content)
+
+            self.discussions = tree.xpath(
+                "//div[@class='threads']/article"
+            )
+
+            # get the discussions, represent each
+            # each will have comments on the first post
+            # articles #thread represent comments in a discussion
+            # each discussion has divs # threadline normal first containing comment info
 
 
     def children(self):
@@ -171,7 +183,7 @@ class posting_scraper:
 
 # print(self.title)
 # ipdb.set_trace()
-myS = category_page_scraper('http://sacramento.craiglist.org/search/ats', 'artists', 'sacramento')
+# myS = category_page_scraper('http://sacramento.craiglist.org/search/ats', 'artists', 'sacramento')
 
 # fp = front_page_scraper('sacramento')
 # fp.print_links()
