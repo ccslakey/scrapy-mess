@@ -2,32 +2,15 @@ from lxml import html
 import requests
 import grequests
 
+from scraperutils import get_absolute_paths, make_absolute_path, lists_to_dict
+
 import math
 import ipdb
 
 headers = {
     'User-Agent': 'someonespecial',
-    # 'From': 'cslakeydev@gmail.com'
+    'From': 'cslakeydev@gmail.com'
 }
-
-def get_absolute_paths(unfilteredlinks, city):
-    return [make_absolute_path(link, city) for link in unfilteredlinks]
-
-def make_absolute_path(link, city):
-    if link:
-        if("forums" not in link):
-            if "http://" not in link:
-                return "http://" + city + ".craiglist.org" + link
-    # if link[0:8] is "https://":
-    #     return link
-    elif "http://" not in link:
-            return "http://" + city + ".craiglist.org" + link
-    return link
-
-def lists_to_dict(list_a, list_b):
-    # creates a dict with list a as the keys, list b as the vals
-    if len(list_a) == len(list_b):
-        return dict(zip(list_a, list_b))
 
 class front_page_scraper:
     def __init__(self, city):
@@ -76,28 +59,32 @@ class front_page_scraper:
 class category_page_scraper:
 
     def __init__(self, category_url, category_title, city, limit=100):
+
         self.city = city
         self.title = category_title
         self.titles = []
         self.links = []
         self.url = category_url
         # self.type = "listings"
+
         if "forums" not in category_url:
-            self.type = "search or i"
+
+            self.type = "posts"
             self.page = requests.get(category_url, headers=headers)
             self.tree = html.fromstring(self.page.content)
             result_count = self.tree.xpath(
                 "//span[@class='totalcount']/text()"
             )
-            if limit is None or limit > result_count:
-                self.result_count = result_count[0]
+
+            if type(result_count) == list:
+                self.result_count = min(int(result_count[0]), limit)
             else:
-                self.result_count = limit
+                self.result_count = min(int(result_count), limit)
+
             if self.result_count:
                 # round up to nearest hundred for pagination
                 self.rounded_count = int(math.ceil(int(self.result_count)/100.0)) * 100
                 urls = []
-                # ipdb.set_trace()
                 for i in range(0, self.rounded_count, 100):
                     url = category_url + '?s=' + str(i)
                     urls.append(url)
@@ -115,6 +102,7 @@ class category_page_scraper:
                     self.links += get_absolute_paths(self.next_tree.xpath(
                         "//p[@class='row']/span/span/a[@class='hdrlnk']/@href"
                     ), city)
+
                 self.category_dict = lists_to_dict(self.titles, self.links)
                 self.listed = [{"title": k, "link": v, "type": self.type} for k, v in self.category_dict.items()]
 
@@ -122,7 +110,7 @@ class category_page_scraper:
             self.title = "Forums - " + category_title
             self.type = "forums"
             self.url = category_url
-
+            self.page = requests.get(category_url, headers=headers)
 
 
     def children(self):
@@ -182,8 +170,9 @@ class posting_scraper:
 
 
 # print(self.title)
-# myS = category_page_scraper('http://sacramento.craiglist.org/search/ats', 'artists',
- # 'sacramento')
+# ipdb.set_trace()
+myS = category_page_scraper('http://sacramento.craiglist.org/search/ats', 'artists', 'sacramento')
+
 # fp = front_page_scraper('sacramento')
 # fp.print_links()
 # fp.create_children()
