@@ -49,4 +49,4 @@ def root():
     return "hi, you're at the root of a super swell api!"
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host='0.0.0.0')

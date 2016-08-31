@@ -1,2 +1,1 @@
-web: gunicorn gettingstarted.wsgi --log-file -
-
+web: gunicorn wsgi:app --max-requests 1000
