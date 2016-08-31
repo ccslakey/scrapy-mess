@@ -1,0 +1,5 @@
+lxml==3.6.4
+requests==2.11.1
+grequests==0.3.0
+flask==0.10.1
+jsonschema==2.5.1
